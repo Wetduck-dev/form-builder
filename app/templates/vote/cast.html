@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>رأی دادن</title>
+</head>
+<body>
+
+<h2>سلام {{ voter.full_name }} عزیز</h2>
+<p>لطفاً رأی خود را در فرم زیر ثبت کنید:</p>
+
+<form method="POST">
+
+    {% for page in form.pages %}
+        <h2>{{ page.title }}</h2>
+
+        {% for q in page.questions %}
+            <div style="margin-bottom: 20px;">
+                <h4>
+                    {{ q.text }}
+                    {# نمایش محدودیت انتخاب‌ها #}
+                    {% if q.min_select or q.max_select %}
+                        <small>
+                            (
+                            {% if q.min_select %}حداقل {{ q.min_select }}{% endif %}
+                            {% if q.max_select %}
+                                {% if q.min_select %}،{% endif %}
+                                حداکثر {{ q.max_select }}
+                            {% endif %}
+                            )
+                        </small>
+                    {% endif %}
+                </h4>
+
+                {% set input_type = 'checkbox' if q.max_select > 1 else 'radio' %}
+
+                {% for opt in q.options %}
+                    <label style="display:block;">
+                        <input
+                            type="{{ input_type }}"
+                            name="question_{{ q.id }}"
+                            value="{{ opt.id }}"
+                        >
+                        {{ opt.text }}
+                    </label>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <button type="submit">ثبت رأی</button>
+
+</form>
+
+</body>
+</html>

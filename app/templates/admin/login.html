@@ -1,0 +1,27 @@
+{% extends "layouts/base.html" %}
+{% set hide_navbar = True %}
+{% block title %}ورود{% endblock %}
+
+{% block content %}
+
+<div class="glass-card">
+    <h2>ورود مدیر</h2>
+
+    <form method="POST">
+        <input name="username" placeholder="نام کاربری">
+        <input type="password" name="password" placeholder="رمز عبور">
+        <button type="submit">ورود</button>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block flash %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="msg {{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+{% endblock %}

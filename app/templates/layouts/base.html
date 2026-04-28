@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>{% block title %}سامانه{% endblock %}</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com">
+</head>
+
+<body>
+    <!-- <div style="color:red; position:fixed; top:0; left:0; z-index:999999;">
+
+        DEBUG: hide_navbar = {{ hide_navbar }}
+    </div> -->
+
+
+{% if hide_navbar is not defined or hide_navbar == False %}
+<nav class="navbar">
+    <div class="nav-title">سامانه فرم‌ساز</div>
+
+    <div class="nav-links">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('admin.forms_list') }}">داشبورد</a>
+            <a href="{{ url_for('admin.create_form') }}">ساخت فرم</a>
+            <a href="{{ url_for('auth.logout') }}">خروج</a>
+        {% endif %}
+    </div>
+</nav>
+
+{% endif %}
+{% block flash %}{% endblock %}
+
+
+
+
+
+<div class="page-container">
+    {% block content %}{% endblock %}
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

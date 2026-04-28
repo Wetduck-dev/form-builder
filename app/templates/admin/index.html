@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <title>داشبورد مدیریت</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f8f9fa;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.07);
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .actions {
+            margin-top: 30px;
+        }
+
+        .actions a {
+            display: inline-block;
+            padding: 12px 18px;
+            background: #0d6efd;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: 0.25s;
+        }
+
+        .actions a:hover {
+            background: #084298;
+        }
+
+        .stats-box {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>داشبورد مدیریت</h2>
+    <p>علی جان، خوش آمدی! اینجا صفحهٔ داشبورد ادمین هست.</p>
+    <p>از این بخش می‌تونی مدیریت فرم‌ها، رأی‌دهندگان و نتایج را انجام بدی.</p>
+
+    <div class="actions">
+        <a href="{{ url_for('admin.forms_list') }}">مشاهده و مدیریت فرم‌ها</a>
+    </div>
+    
+
+    <!-- اگر خواستی آمارهای کلی اضافه کن -->
+    <div class="stats-box">
+        <p>اینجا می‌تونی بعداً آمارهای کلی مثل تعداد فرم‌ها، تعداد رأی‌دهندگان، وضعیت سیستم و ... رو نمایش بدی.</p>
+    </div>
+</div>
+
+</body>
+</html>

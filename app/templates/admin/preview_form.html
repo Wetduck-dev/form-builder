@@ -1,0 +1,123 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}پیش‌نمایش فرم - {{ form.title }}{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="page-header">
+    <div class="header-line"></div>
+    <div class="header-text">
+        <h1 class="page-title">👁 پیش‌نمایش فرم: {{ form.title }}</h1>
+        {% if form.description %}
+            <p class="page-subtitle">{{ form.description }}</p>
+        {% else %}
+            <p class="page-subtitle">پیش‌نمایش صفحه‌های این فرم، فقط برای مدیر</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Action Bar -->
+<div class="quick-stats" style="margin-bottom: 20px;">
+    <a href="{{ url_for('admin.builder', form_id=form.id) }}" class="glass-btn">
+        ⬅ بازگشت به Builder
+    </a>
+    <div class="glass-btn" style="cursor:default;">
+        توکن فرم:
+        <code style="direction:ltr; margin-right:6px;">
+
+            {{ form.token }}
+        </code>
+    </div>
+
+    {% if form.is_finalized %}
+        <div class="glass-btn success" style="cursor:default;">
+            ✅ فرم نهایی شده است
+        </div>
+    {% else %}
+        <div class="glass-btn warning" style="cursor:default;">
+            📝 فرم در حالت پیش‌نویس است
+        </div>
+    {% endif %}
+
+</div>
+
+<!-- Info Card -->
+<div class="dashboard-card" style="margin-bottom: 20px;">
+    <p class="info-text">
+        این فقط یک <strong>پیش‌نمایش</strong> برای مدیر است؛ هیچ رأیی در این صفحه ثبت نمی‌شود.
+    </p>
+    {% if total_pages > 0 %}
+        <p class="info-text" style="margin-top:6px;">
+            صفحه <strong>{{ page_number }}</strong> از <strong>{{ total_pages }}</strong>
+        </p>
+    {% endif %}
+</div>
+
+{% if page %}
+    <!-- Page Card -->
+    <div class="dashboard-card" style="margin-bottom: 20px;">
+        <div class="builder-card-header">
+            <div class="page-info">
+                <h3 style="margin:0;">📄 {{ page.title or "بدون عنوان" }}</h3>
+            </div>
+        </div>
+
+        {% if page.questions %}
+            {% for q in page.questions %}
+                <div class="question-box" style="border-bottom:1px solid rgba(255,255,255,0.08); padding:12px 0; margin-bottom:8px;">
+                    <div class="question-text" style="font-weight:600; margin-bottom:4px; color:white;">
+                        {{ loop.index }}. {{ q.text }}
+                    </div>
+
+                    <div class="info-text" style="margin-bottom:6px;">
+                        حداقل انتخاب: {{ q.min_select }} / حداکثر: {{ q.max_select }}
+                    </div>
+
+                    {% for opt in q.options %}
+                        <div class="option-item" style="margin:3px 0;">
+                            <span class="badge" style="background:rgba(148,163,184,0.3); color:#e5e7eb; border-radius:999px; padding:2px 8px; font-size:11px;">
+                                گزینه {{ loop.index }}
+                            </span>
+                            <span style="color:#e5e7eb;">{{ opt.text }}</span>
+                        </div>
+                    {% endfor %}
+
+                    {% if not q.options %}
+                        <div class="info-text">
+                            هنوز گزینه‌ای برای این سؤال تعریف نشده است.
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="info-text">این صفحه هنوز سؤالی ندارد.</p>
+        {% endif %}
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="quick-stats" style="justify-content: space-between; margin-top:10px;">
+        {% if page_number > 1 %}
+            <a class="glass-btn"
+               href="{{ url_for('admin.preview_form', form_id=form.id, page=page_number-1) }}">
+                ← صفحه قبل
+            </a>
+        {% else %}
+            <span></span>
+        {% endif %}
+
+        {% if page_number < total_pages %}
+            <a class="glass-btn"
+               href="{{ url_for('admin.preview_form', form_id=form.id, page=page_number+1) }}">
+               صفحه بعد →
+            </a>
+        {% endif %}
+    </div>
+
+{% else %}
+    <div class="dashboard-card">
+        <p class="info-text">برای این فرم هنوز صفحه‌ای تعریف نشده است.</p>
+    </div>
+{% endif %}
+
+{% endblock %}

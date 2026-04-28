@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>پیش‌نمایش فرم - {{ form.title }}</title>
+    <style>
+        body {
+            font-family: Vazirmatn, sans-serif;
+            direction: rtl;
+            margin: 20px;
+            background: #f8f9fa;
+        }
+
+        .container { max-width: 800px; margin: 0 auto; }
+
+        .form-header {
+            background: white;
+            border-radius: 8px;
+            padding: 15px 20px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .page-box {
+            background: white;
+            border-radius: 8px;
+            padding: 15px 20px;
+            border: 1px solid #0d6efd;
+            margin-bottom: 20px;
+        }
+
+        .question-text { font-weight: 600; margin-bottom: 5px; }
+        .option-item { margin: 4px 0; }
+
+        .info-text { font-size: 13px; color: #666; }
+
+        .badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: #f1f3f4;
+            color: #555;
+            text-decoration: none;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .start-btn {
+            background: #0d6efd;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 13px;
+            color: #aaa;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="form-header">
+        <h2>{{ form.title }}</h2>
+        {% if form.description %}
+            <p>{{ form.description }}</p>
+        {% endif %}
+        <div class="info-text">
+            فرم نهایی شده - حالت نمایش عمومی
+        </div>
+    </div>
+
+    {% if page %}
+        <div class="page-box">
+            <h3>📄 {{ page.title or "بدون عنوان" }}</h3>
+
+            {% if page.questions %}
+                {% for q in page.questions %}
+                    <div style="margin-bottom:15px;">
+                        <div class="question-text">
+                            {{ loop.index }}. {{ q.text }}
+                        </div>
+                        <div class="info-text">
+                            حداقل انتخاب: {{ q.min_select }} / حداکثر: {{ q.max_select }}
+                        </div>
+
+                        {% for opt in q.options %}
+                            <div class="option-item">
+                                {{ opt.text }}
+                            </div>
+                        {% endfor %}
+
+                        {% if not q.options %}
+                            <div class="info-text">هنوز گزینه‌ای برای این سؤال تعریف نشده است.</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="info-text">این صفحه هنوز سؤالی ندارد.</p>
+            {% endif %}
+        </div>
+
+        <div class="nav-buttons">
+            {% if page_number > 1 %}
+                <a class="badge"
+                   href="{{ url_for('admin.public_preview', token=form.token, page=page_number-1) }}">
+                   ← صفحه قبل
+                </a>
+            {% else %}
+                <span></span>
+            {% endif %}
+
+            {% if page_number < total_pages %}
+                <a class="badge"
+                   href="{{ url_for('admin.public_preview', token=form.token, page=page_number+1) }}">
+                   صفحه بعد →
+                </a>
+            {% else %}
+                <a class="start-btn"
+                   href="{{ url_for('vote.vote_page', token=form.token) }}">
+                   ✅ شروع رأی‌گیری
+                </a>
+            {% endif %}
+        </div>
+
+    {% else %}
+        <p class="info-text" style="text-align:center;">
+            برای این فرم هنوز هیچ صفحه‌ای وجود ندارد.
+        </p>
+    {% endif %}
+
+    <div class="footer">
+        © {{ form.created_at.year }} - فرم ساخته‌شده با سیستم FormBuilder
+    </div>
+</div>
+
+</body>
+</html>

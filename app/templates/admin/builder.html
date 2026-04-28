@@ -1,0 +1,136 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="page-container">
+    
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="header-line"></div>
+        <div class="header-text">
+            <h1 class="page-title">🔧 ساخت فرم: {{ form.title }}</h1>
+            <p class="page-subtitle">{{ form.description or 'در حال طراحی ساختار نهایی فرم...' }}</p>
+        </div>
+    </div>
+
+    <!-- Top Action Bar -->
+    <div class="quick-stats" style="margin-bottom: 20px;">
+        <a href="{{ url_for('admin.preview_form', form_id=form.id) }}" class="glass-btn" style="flex:1;">👁 پیش‌نمایش</a>
+        <button onclick="openHistory()" class="glass-btn" style="flex:1;">📜 تاریخچه تغییرات</button>
+        <a href="{{ url_for('admin.forms_list') }}" class="glass-btn danger" style="flex:0.5;">برگشت</a>
+    </div>
+
+    <!-- Finalize Status Card -->
+    <div class="dashboard-card" style="margin-bottom: 30px; border-right: 4px solid #6366f1;">
+        {% if not form.is_finalized %}
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span class="form-status inactive">وضعیت: پیش‌نویس</span>
+                    <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 8px;">پس از نهایی‌سازی، فرم آماده انتشار می‌شود.</p>
+                </div>
+                <form action="{{ url_for('admin.finalize_form', form_id=form.id) }}" method="POST">
+                    <button class="glass-btn" style="background: #6366f1;">✔ ثبت نهایی فرم</button>
+                </form>
+            </div>
+        {% else %}
+            <span class="form-status active">وضعیت: نهایی شده</span>
+            <p style="color: rgba(255,255,255,0.6); margin-top: 10px;">🔒 این فرم قفل شده و در حال جمع‌آوری داده است.</p>
+        {% endif %}
+    </div>
+
+    <hr style="opacity: 0.1; margin: 40px 0;">
+
+    {% if not form.is_finalized %}
+    <div class="dashboard-card">
+        <h3 style="color: white; margin-bottom: 20px; font-size: 18px;">➕ افزودن صفحه جدید</h3>
+        <form id="addPageForm" method="POST" action="{{ url_for('admin.add_page', form_id=form.id) }}" style="display: flex; gap: 15px; align-items: flex-start;">
+            <div class="field-group">
+                <input type="text" name="title" id="page_title" placeholder=" " required>
+                <label for="page_title">عنوان صفحه (مثلاً: اطلاعات فردی)</label>
+            </div>
+            <button type="submit" class="glass-btn" style="height: 52px; padding: 0 30px; background: #8b5cf6;">افزودن</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <h3 style="color: white; margin: 40px 0 20px;">📄 صفحات طراحی شده</h3>
+
+    <div class="forms-container" id="pagesContainer">
+
+        {% for page in pages %}
+
+        <div class="builder-card" id="page-{{ page.id }}">
+
+            <div class="builder-card-header" style="display:flex; align-items:center; justify-content:space-between;">
+
+                <div style="display:flex; align-items:center; gap:12px;">
+
+                    <div class="drag-handle">☰</div>
+
+                    <div>
+                        <h4 class="page-title-text"
+                            data-page-id="{{ page.id }}"
+                            style="color:white; margin:0; cursor:pointer;">
+                            {{ page.title }}
+                        </h4>
+
+                        <small style="color: rgba(255,255,255,0.4);">
+                            ID: #{{ page.id }}
+                        </small>
+                    </div>
+
+                </div>
+
+                <div class="form-actions">
+
+                    <button class="glass-btn duplicate-page"
+                        data-page-id="{{ page.id }}">
+                        📄 کپی
+                    </button>
+
+                    {% if not form.is_finalized %}
+                        <a href="{{ url_for('admin.builder_page', form_id=form.id, page_id=page.id) }}" class="glass-btn">
+                            ✏️ ویرایش محتوا
+                        </a>
+
+                        <button class="glass-btn danger delete-page"
+                                data-page-id="{{ page.id }}">
+                            🗑 حذف
+                        </button>
+                    {% else %}
+                        <span class="glass-btn" style="opacity: 0.5; cursor: not-allowed;">
+                            🔒 غیرقابل تغییر
+                        </span>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+<div id="historyModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); z-index:2000; align-items:center; justify-content:center;">
+    <div class="dashboard-card glass-modal" style="width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin:0;">📜 تاریخچه تغییرات</h3>
+            <button onclick="closeHistory()" class="glass-btn" style="width: 40px; padding:0;">✕</button>
+        </div>
+        <div id="historyList"></div>
+    </div>
+</div>
+
+<script>
+    window.formId = Number("{{ form.id }}");
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="{{ url_for('static', filename='js/builder.js') }}"></script>
+
+
+{% endblock %}

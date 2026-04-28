@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>فرم ایجاد شد</title>
+
+<style>
+body{
+font-family: Arial;
+margin:40px;
+direction:rtl;
+}
+
+.box{
+max-width:700px;
+margin:auto;
+border:1px solid #ddd;
+padding:25px;
+border-radius:10px;
+background:#fafafa;
+}
+
+.linkbox{
+display:flex;
+margin-top:15px;
+}
+
+input{
+flex:1;
+padding:10px;
+font-size:14px;
+}
+
+button{
+padding:10px 15px;
+background:#0d6efd;
+border:none;
+color:white;
+cursor:pointer;
+}
+
+.back{
+display:inline-block;
+margin-top:20px;
+padding:8px 14px;
+background:#198754;
+color:white;
+text-decoration:none;
+border-radius:6px;
+}
+</style>
+
+<script>
+function copyLink(){
+let copyText=document.getElementById("formLink");
+copyText.select();
+copyText.setSelectionRange(0,99999);
+navigator.clipboard.writeText(copyText.value);
+alert("لینک کپی شد ✅");
+}
+</script>
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>✅ فرم با موفقیت ساخته شد</h2>
+
+<p>لینک فرم را کپی کنید و برای کاربران ارسال کنید:</p>
+
+<div class="linkbox">
+<input id="formLink" type="text"
+       value="{{ url_for('vote.vote_page', token=form.token, _external=True) }}"
+       readonly>
+
+<button onclick="copyLink()">کپی</button>
+</div>
+
+<a href="{{ url_for('admin.forms_list') }}" class="back">
+بازگشت به داشبورد
+</a>
+
+</div>
+
+</body>
+</html>
