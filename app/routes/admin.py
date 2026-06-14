@@ -276,24 +276,56 @@ def upload_voters_direct(form_id):
         return redirect(url_for("admin.forms_list"))
 
     try:
-        df = pd.read_excel(
-            file,
-            converters={
-                "national_id": lambda x: str(x).strip().replace(".0", ""),
-                "phone": lambda x: str(x).strip().replace(".0", "")
-            }
-        )
+        df = pd.read_excel(file)
 
-        df["national_id"] = df["national_id"].astype(str).str.strip().str.zfill(10)
+        # نرمال سازی نام ستون ها
+        df.columns = [c.strip().lower() for c in df.columns]
+
+        # نام های قابل قبول برای ستون ها
+        national_id_cols = ["national_id", "nationalid", "nid", "کدملی", "کد ملی"]
+        name_cols = ["name", "full_name", "fullname", "نام", "نام و نام خانوادگی"]
+        phone_cols = ["phone", "mobile", "phone_number", "موبایل", "شماره موبایل"]
+
+        def find_column(possible_names):
+            for col in possible_names:
+                if col in df.columns:
+                    return col
+            return None
+
+        national_id_col = find_column(national_id_cols)
+        name_col = find_column(name_cols)
+        phone_col = find_column(phone_cols)
+
+        if not national_id_col:
+            raise ValueError("ستون کد ملی پیدا نشد")
 
         count = 0
-        for _, row in df.iterrows():
+
+        for row in df.to_dict(orient="records"):
+
+            national_id_value = row.get(national_id_col)
+
+            # رد کردن سطر خالی
+            if pd.isna(national_id_value):
+                continue
+
+            national_id = str(national_id_value).strip().replace(".0", "").zfill(10)
+
+            full_name = ""
+            if name_col and row.get(name_col):
+                full_name = str(row.get(name_col)).strip()
+
+            phone = ""
+            if phone_col and row.get(phone_col):
+                phone = str(row.get(phone_col)).strip().replace(".0", "")
+
             voter = Voter(
                 form_id=form.id,
-                national_id=str(row["national_id"]).strip(),
-                full_name=row["name"],
-                phone=str(row["phone"]).strip()
+                national_id=national_id,
+                full_name=full_name,
+                phone=phone
             )
+
             db.session.add(voter)
             count += 1
 
@@ -317,7 +349,6 @@ def upload_voters_direct(form_id):
         })
     flash(msg, "success")
     return redirect(url_for("admin.forms_list"))
-
 
 @admin_bp.route("/delete_voters/<int:form_id>")
 @login_required
