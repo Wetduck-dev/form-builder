@@ -22,10 +22,10 @@
     <a href="{{ url_for('admin.builder', form_id=form.id) }}" class="glass-btn">
         ⬅ بازگشت به Builder
     </a>
+
     <div class="glass-btn" style="cursor:default;">
         توکن فرم:
         <code style="direction:ltr; margin-right:6px;">
-
             {{ form.token }}
         </code>
     </div>
@@ -39,7 +39,6 @@
             📝 فرم در حالت پیش‌نویس است
         </div>
     {% endif %}
-
 </div>
 
 <!-- Info Card -->
@@ -54,70 +53,97 @@
     {% endif %}
 </div>
 
+
 {% if page %}
-    <!-- Page Card -->
-    <div class="dashboard-card" style="margin-bottom: 20px;">
-        <div class="builder-card-header">
-            <div class="page-info">
-                <h3 style="margin:0;">📄 {{ page.title or "بدون عنوان" }}</h3>
-            </div>
+
+<!-- Page card -->
+<div class="dashboard-card" style="margin-bottom: 20px;">
+    <div class="builder-card-header">
+        <div class="page-info">
+            <h3 style="margin:0;">📄 {{ page.title or "بدون عنوان" }}</h3>
         </div>
+    </div>
 
-        {% if page.questions %}
-            {% for q in page.questions %}
-                <div class="question-box" style="border-bottom:1px solid rgba(255,255,255,0.08); padding:12px 0; margin-bottom:8px;">
-                    <div class="question-text" style="font-weight:600; margin-bottom:4px; color:white;">
-                        {{ loop.index }}. {{ q.text }}
-                    </div>
+    {% for q in page.questions %}
+        <div class="question-box"
+             style="border-bottom:1px solid rgba(255,255,255,0.08); padding:12px 0; margin-bottom:8px;">
 
-                    <div class="info-text" style="margin-bottom:6px;">
-                        حداقل انتخاب: {{ q.min_select }} / حداکثر: {{ q.max_select }}
-                    </div>
+            <div class="question-text" style="font-weight:600; margin-bottom:4px; color:white;">
+                {{ loop.index }}. {{ q.text }}
+            </div>
 
+            {# select / multi-select #}
+            {% if q.type in ["select", "multi-select"] %}
+                <div class="info-text" style="margin-bottom:6px;">
+                    حداقل انتخاب: {{ q.min_select }} / حداکثر: {{ q.max_select }}
+                </div>
+
+                {% if q.options %}
                     {% for opt in q.options %}
                         <div class="option-item" style="margin:3px 0;">
-                            <span class="badge" style="background:rgba(148,163,184,0.3); color:#e5e7eb; border-radius:999px; padding:2px 8px; font-size:11px;">
+                            <span class="badge"
+                                  style="background:rgba(148,163,184,0.3); color:#e5e7eb;
+                                         border-radius:999px; padding:2px 8px; font-size:11px;">
                                 گزینه {{ loop.index }}
                             </span>
                             <span style="color:#e5e7eb;">{{ opt.text }}</span>
                         </div>
                     {% endfor %}
+                {% else %}
+                    <div class="info-text">گزینه‌ای تعریف نشده است.</div>
+                {% endif %}
+            {% endif %}
 
-                    {% if not q.options %}
-                        <div class="info-text">
-                            هنوز گزینه‌ای برای این سؤال تعریف نشده است.
-                        </div>
-                    {% endif %}
+            {# image upload #}
+            {% if q.type == "image" %}
+                <div style="margin-top:10px; color:#93c5fd;">
+                    🖼 <strong>فیلد آپلود تصویر</strong>
                 </div>
-            {% endfor %}
-        {% else %}
-            <p class="info-text">این صفحه هنوز سؤالی ندارد.</p>
-        {% endif %}
-    </div>
+            {% endif %}
 
-    <!-- Navigation Buttons -->
-    <div class="quick-stats" style="justify-content: space-between; margin-top:10px;">
-        {% if page_number > 1 %}
-            <a class="glass-btn"
-               href="{{ url_for('admin.preview_form', form_id=form.id, page=page_number-1) }}">
-                ← صفحه قبل
-            </a>
-        {% else %}
-            <span></span>
-        {% endif %}
+            {# file upload #}
+            {% if q.type == "file" %}
+                <div style="margin-top:10px; color:#fde68a;">
+                    📎 <strong>فیلد آپلود فایل</strong>
+                </div>
+            {% endif %}
 
-        {% if page_number < total_pages %}
-            <a class="glass-btn"
-               href="{{ url_for('admin.preview_form', form_id=form.id, page=page_number+1) }}">
-               صفحه بعد →
-            </a>
-        {% endif %}
-    </div>
+            {# text-like #}
+            {% if q.type in ["text", "textarea", "number", "date"] %}
+                <div style="margin-top:10px; color:#e5e7eb;">
+                    🔤 این یک سؤال ورودی {{ q.type }} است.
+                </div>
+            {% endif %}
+
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Navigation -->
+<div class="quick-stats" style="justify-content: space-between; margin-top:10px;">
+    {% if page_number > 1 %}
+        <a class="glass-btn"
+           href="{{ url_for('admin.preview_form', form_id=form.id, page=page_number-1) }}">
+            ← صفحه قبل
+        </a>
+    {% else %}
+        <span></span>
+    {% endif %}
+
+    {% if page_number < total_pages %}
+        <a class="glass-btn"
+           href="{{ url_for('admin.preview_form', form_id=form.id, page=page_number+1) }}">
+           صفحه بعد →
+        </a>
+    {% endif %}
+</div>
 
 {% else %}
-    <div class="dashboard-card">
-        <p class="info-text">برای این فرم هنوز صفحه‌ای تعریف نشده است.</p>
-    </div>
+<!-- No page -->
+<div class="dashboard-card">
+    <p class="info-text">برای این فرم هنوز صفحه‌ای تعریف نشده است.</p>
+</div>
+
 {% endif %}
 
 {% endblock %}

@@ -20,7 +20,7 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 @admin_bp.route("/")
 @login_required
 def index():
-    return redirect(url_for("admin.forms_list"))
+    return redirect(url_for("admin.dashboard"))
 
 
 
@@ -171,12 +171,13 @@ def add_question(page_id):
     form_id = page.form_id
 
     text = request.form.get("text")
-
+    type = request.form["type"]
     min_select = request.form.get("min_select", 1)
     max_select = request.form.get("max_select", 1)
 
     question = Question(
         text=text,
+        type=type,
         page_id=page.id,
         min_select=int(min_select),
         max_select=int(max_select)
@@ -197,12 +198,25 @@ def add_question(page_id):
             "max_select": max_select
         }
     )
+    print(request.form)
+ 
 
-    return redirect(
-        url_for("admin.builder_page",
-                form_id=form_id,
-                page_id=page_id)
-    )
+    return jsonify({
+
+        "status": "ok",
+        "question": {
+            "id": question.id,
+            "text": question.text,
+            "min_select": question.min_select,
+            "max_select": question.max_select,
+            "options": []
+
+        }
+    })
+
+
+
+
 
 @admin_bp.route("/add_option/<int:question_id>", methods=["POST"])
 @login_required
@@ -234,45 +248,74 @@ def add_option(question_id):
 
     page_id = opt.question.page_id
 
-    return redirect(url_for(
-        "admin.builder_page",
-        form_id=form.id,
-        page_id=page_id
-    ))
+    return jsonify({
+
+        "status": "ok",
+        "option": {
+            "id": opt.id,
+            "text": opt.text
+        }
+    })
+
+
+
 
 
 @admin_bp.route("/upload_direct/<int:form_id>", methods=["POST"])
 @login_required
 def upload_voters_direct(form_id):
     form = Form.query.get_or_404(form_id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
     file = request.files.get("excel_file")
     if not file:
-        flash("هیچ فایلی انتخاب نشد.", "danger")
+        msg = "هیچ فایلی انتخاب نشد."
+        if is_ajax:
+            return jsonify({"success": False, "message": msg}), 400
+        flash(msg, "danger")
         return redirect(url_for("admin.forms_list"))
 
-    df = pd.read_excel(
-        file,
-        converters={
-            "national_id": lambda x: str(x).strip().replace(".0", ""),
-            "phone": lambda x: str(x).strip().replace(".0", "")
-        }
-    )
-
-    df["national_id"] = df["national_id"].astype(str).str.strip().str.zfill(10)
-
-    for _, row in df.iterrows():
-        voter = Voter(
-            form_id=form.id,
-            national_id=str(row["national_id"]).strip(),
-            full_name=row["name"],
-            phone=str(row["phone"]).strip()
+    try:
+        df = pd.read_excel(
+            file,
+            converters={
+                "national_id": lambda x: str(x).strip().replace(".0", ""),
+                "phone": lambda x: str(x).strip().replace(".0", "")
+            }
         )
-        db.session.add(voter)
 
-    db.session.commit()
+        df["national_id"] = df["national_id"].astype(str).str.strip().str.zfill(10)
 
-    flash("لیست رأی‌دهندگان با موفقیت آپلود شد.", "success")
+        count = 0
+        for _, row in df.iterrows():
+            voter = Voter(
+                form_id=form.id,
+                national_id=str(row["national_id"]).strip(),
+                full_name=row["name"],
+                phone=str(row["phone"]).strip()
+            )
+            db.session.add(voter)
+            count += 1
+
+        db.session.commit()
+
+    except Exception as e:
+        db.session.rollback()
+        msg = "خطا در پردازش فایل اکسل."
+        if is_ajax:
+            return jsonify({"success": False, "message": msg}), 500
+        flash(msg, "danger")
+        return redirect(url_for("admin.forms_list"))
+
+    msg = f"لیست رأی‌دهندگان با موفقیت آپلود شد. ({count} نفر)"
+    if is_ajax:
+        return jsonify({
+            "success": True,
+            "message": msg,
+            "added": count,
+            "form_id": form.id
+        })
+    flash(msg, "success")
     return redirect(url_for("admin.forms_list"))
 
 
@@ -280,11 +323,20 @@ def upload_voters_direct(form_id):
 @login_required
 def delete_voters(form_id):
     form = Form.query.get_or_404(form_id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
     deleted = Voter.query.filter_by(form_id=form.id).delete()
     db.session.commit()
 
-    flash(f"{deleted} رأی‌دهنده حذف شد.", "info")
+    msg = f"{deleted} رأی‌دهنده حذف شد."
+    if is_ajax:
+        return jsonify({
+            "success": True,
+            "message": msg,
+            "deleted": deleted,
+            "form_id": form.id
+        })
+    flash(msg, "info")
     return redirect(url_for("admin.forms_list"))
 
 
@@ -304,22 +356,24 @@ def finalize_form(form_id):
     form.is_active = True
 
     db.session.commit()
+    
 
-    flash("فرم با موفقیت نهایی شد.", "success")
-    return redirect(url_for('admin.form_created', form_id=form_id))
+    flash(f"فرم «{form.title}» با موفقیت نهایی شد.", "success")
+    return redirect(url_for('admin.forms_list'))
+
 
 
 @admin_bp.route("/delete_form/<int:form_id>")
 @login_required
 def delete_form(form_id):
     form = Form.query.get_or_404(form_id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
+    # حذف وابستگی‌ها
     Vote.query.filter_by(form_id=form.id).delete()
     Voter.query.filter_by(form_id=form.id).delete()
 
-    # pages = Page.query.filter_by(form_id=form.id).all()
     pages = Page.query.filter_by(form_id=form.id).order_by(Page.order).all()
-
     for page in pages:
         questions = Question.query.filter_by(page_id=page.id).all()
         for q in questions:
@@ -330,7 +384,14 @@ def delete_form(form_id):
     db.session.delete(form)
     db.session.commit()
 
-    flash("فرم و تمام اطلاعات مرتبط با موفقیت حذف شد.", "success")
+    msg = "فرم و تمام اطلاعات مرتبط با موفقیت حذف شد."
+    if is_ajax:
+        return jsonify({
+            "success": True,
+            "message": msg,
+            "form_id": form_id
+        })
+    flash(msg, "success")
     return redirect(url_for("admin.forms_list"))
 
 
@@ -511,8 +572,18 @@ def results_data(form_id):
 @login_required
 def deactivate_form(form_id):
     form = Form.query.get_or_404(form_id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
     form.is_active = False
     db.session.commit()
+
+    if is_ajax:
+        return jsonify({
+            "success": True,
+            "message": "فرم غیرفعال شد.",
+            "form_id": form.id,
+            "is_active": False
+        })
     return redirect(url_for("admin.forms_list"))
 
 
@@ -520,8 +591,18 @@ def deactivate_form(form_id):
 @login_required
 def activate_form(form_id):
     form = Form.query.get_or_404(form_id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
     form.is_active = True
     db.session.commit()
+
+    if is_ajax:
+        return jsonify({
+            "success": True,
+            "message": "فرم فعال شد.",
+            "form_id": form.id,
+            "is_active": True
+        })
     return redirect(url_for("admin.forms_list"))
 
 
@@ -894,6 +975,7 @@ def duplicate_page(page_id):
 
         new_question = Question(
             page_id=new_page.id,
+            type=type,
             text=question.text,
             min_select=question.min_select,
             max_select=question.max_select
@@ -924,3 +1006,38 @@ def duplicate_page(page_id):
             "form_id": new_page.form_id,
         }
     })
+
+
+@admin_bp.route("/dashboard")
+@login_required
+def dashboard():
+    stats = {
+        "total_forms": Form.query.count(),
+        "active_forms": Form.query.filter_by(is_active=True).count(),
+        "finalized_forms": Form.query.filter_by(is_finalized=True).count(),
+        "total_votes": Vote.query.count(),
+        "draft_forms": Form.query.filter_by(status="draft").count()
+    }
+    forms = Form.query.order_by(Form.created_at.desc()).all()
+    
+    return render_template(
+    "admin/dashboard.html",
+    stats=stats,
+    forms=forms)
+
+
+@admin_bp.route("/upload_answer_file/<int:question_id>", methods=["POST"])
+def upload_answer_file(question_id):
+    uploaded = request.files.get("file")
+    if not uploaded:
+        return {"error": "no file"}, 400
+
+    os.makedirs(f"static/uploads/{question_id}", exist_ok=True)
+
+    filename = secure_filename(uploaded.filename)
+    path = f"static/uploads/{question_id}/{filename}"
+    uploaded.save(path)
+
+    return {
+        "file_url": url_for("static", filename=f"uploads/{question_id}/{filename}")
+    }

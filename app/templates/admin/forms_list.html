@@ -3,15 +3,25 @@
 {% block content %}
 
 
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, msg in messages %}
+<div class="alert alert-{{ category }}" style="margin-bottom:15px;">
+    {{ msg }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
 <div class="quick-stats">
-    
+
     <div class="stat-card glass fadeUp">
-        <div class="stat-number">{{ stats.total_forms }}</div>
+        <div class="stat-number" id="total-forms-count">{{ stats.total_forms }}</div>
         <div class="stat-label">کل فرم‌ها</div>
     </div>
 
     <div class="stat-card glass fadeUp" style="animation-delay: .1s;">
-        <div class="stat-number">{{ stats.active_forms }}</div>
+        <div class="stat-number" id="active-forms-count">{{ stats.active_forms }}</div>
         <div class="stat-label">فرم‌های فعال</div>
     </div>
 
@@ -22,8 +32,6 @@
 
 </div>
 
-
-
 <div class="page-header">
     <div class="header-line"></div>
 
@@ -33,154 +41,116 @@
     </div>
 </div>
 
-
-
-
 <div class="dashboard-card">
+    <div class="forms-container">
 
+        {% for form in forms %}
 
+        <div class="form-card glass fadeUp" id="form-card-{{ form.id }}"
+            data-is-active="{{ 'true' if form.is_active else 'false' }}">
 
-<!-- 🌟🌟🌟 شروع نسخه جدید – کارت‌ها به‌جای جدول 🌟🌟🌟 -->
-<div class="forms-container">
+            <div class="form-card-header">
+                <h3 class="form-title">{{ form.title }}</h3>
 
-{% for form in forms %}
-
-    <div class="form-card glass fadeUp">
-
-        <div class="form-card-header">
-            <h3 class="form-title">{{ form.title }}</h3>
-
-            <span class="form-status 
+                <span class="form-status 
                 {% if not form.is_finalized %}
                     inactive
                 {% else %}
                     {% if form.is_active %}active{% else %}inactive{% endif %}
                 {% endif %}
             ">
-                {% if not form.is_finalized %}
+                    {% if not form.is_finalized %}
                     پیش‌نویس
-                {% else %}
-                    {% if form.is_active %}
-                        فعال
                     {% else %}
-                        نهایی شده
+                    {% if form.is_active %}
+                    فعال
+                    {% else %}
+                    نهایی شده
                     {% endif %}
-                {% endif %}
-            </span>
-        </div>
+                    {% endif %}
+                </span>
+            </div>
 
-        <p class="form-date">
-            شناسه: {{ form.id }}  
-            <br>
-            تاریخ ایجاد: {{ form.created_at.strftime("%Y-%m-%d") }}
-        </p>
+            <p class="form-date">
+                شناسه: {{ form.id }}
+                <br>
+                تاریخ ایجاد: {{ form.created_at.strftime("%Y-%m-%d") }}
+            </p>
 
-        <div class="form-meta">
-            <span>توکن: 
-                {% if form.token %}
+            <div class="form-meta">
+                <span>توکن:
+                    {% if form.token %}
                     {{ form.token[:8] }}
-                {% else %}
+                    {% else %}
                     <span class="text-danger">ندارد</span>
-                {% endif %}
-            </span>
+                    {% endif %}
+                </span>
 
-            <span>رأی‌ها: {{ form.votes|length if form.votes else 0 }}</span>
-        </div>
+                <span>رأی‌ها: {{ form.votes|length if form.votes else 0 }}</span>
+            </div>
 
+            <div class="form-actions">
 
-        <div class="form-actions">
-
-            <!-- مدیریت -->
-            <a href="{{ url_for('admin.builder', form_id=form.id) }}" class="glass-btn small">
-                مدیریت
-            </a>
-
-
-            {% if form.is_finalized %}
-
-                {% if form.is_active %}
-                <a href="{{ url_for('admin.deactivate_form', form_id=form.id) }}"
-                class="glass-btn small danger">
-                    غیرفعال کردن
+                <a href="{{ url_for('admin.builder', form_id=form.id) }}" class="glass-btn small">
+                    مدیریت
                 </a>
-                {% else %}
-                <a href="{{ url_for('admin.activate_form', form_id=form.id) }}"
-                class="glass-btn small">
-                    فعال کردن
-                </a>
-                {% endif %}
 
+                {% if form.is_finalized %}
 
-                <script>
-                function copyFormLink(token) {
-                    const url = window.location.origin + "/vote/" + token;
-                    navigator.clipboard.writeText(url)
-                        .then(() => alert("لینک کپی شد!"))
-                        .catch(() => alert("خطا در کپی لینک"));
-                }
-                </script>
+                <button class="glass-btn small toggle-form-status {% if form.is_active %}danger{% endif %}"
+                    data-form-id="{{ form.id }}"
+                    data-action="{% if form.is_active %}deactivate{% else %}activate{% endif %}">
+                    {% if form.is_active %}غیرفعال کردن{% else %}فعال کردن{% endif %}
+                </button>
 
                 {% if form.token %}
-                <button class="glass-btn small"
-                        onclick="copyFormLink('{{ form.token }}')">
+                <button class="glass-btn small copy-link-btn" data-token="{{ form.token }}">
                     کپی لینک
                 </button>
                 {% else %}
-                    <span class="badge bg-danger">توکن ندارد</span>
+                <span class="badge bg-danger">توکن ندارد</span>
                 {% endif %}
 
-            {% else %}
+                {% else %}
                 <button class="glass-btn small" disabled>در حالت پیش‌نویس</button>
-            {% endif %}
+                {% endif %}
 
+                <form action="{{ url_for('admin.upload_voters_direct', form_id=form.id) }}" method="POST"
+                    enctype="multipart/form-data" class="upload-voters-form" data-form-id="{{ form.id }}"
+                    style="display:inline-block">
 
-            <!-- آپلود افراد -->
-            <form action="{{ url_for('admin.upload_voters_direct', form_id=form.id) }}"
-                method="POST"
-                enctype="multipart/form-data"
-                style="display:inline-block">
+                    <label class="glass-btn small" style="cursor:pointer;">
+                        آپلود افراد
+                        <input type="file" name="excel_file" accept=".xlsx,.xls" style="display:none;"
+                            class="excel-input">
+                    </label>
+                </form>
 
-                <label class="glass-btn small" style="cursor:pointer;">
-                    آپلود افراد
-                    <input type="file"
-                        name="excel_file"
-                        accept=".xlsx,.xls"
-                        style="display:none;"
-                        onchange="this.form.submit()">
-                </label>
-            </form>
+                <button class="glass-btn small danger delete-voters-btn"
+                    data-url="{{ url_for('admin.delete_voters', form_id=form.id) }}">
+                    حذف افراد
+                </button>
 
-            <!-- حذف افراد -->
-            <a href="{{ url_for('admin.delete_voters', form_id=form.id) }}"
-            class="glass-btn small danger"
-            onclick="return confirm('لیست افراد پاک شود؟')">
-                حذف افراد
-            </a>
+                <a href="{{ url_for('admin.results', form_id=form.id) }}" class="glass-btn small">
+                    نتایج
+                </a>
 
-            <!-- نتایج -->
-            <a href="{{ url_for('admin.results', form_id=form.id) }}"
-            class="glass-btn small">
-                نتایج
-            </a>
+                <button class="glass-btn small danger delete-form-btn"
+                    data-url="{{ url_for('admin.delete_form', form_id=form.id) }}" data-form-id="{{ form.id }}">
+                    حذف
+                </button>
 
-            <!-- حذف فرم -->
-            <a href="{{ url_for('admin.delete_form', form_id=form.id) }}"
-            onclick="return confirm('حذف شود؟')"
-            class="glass-btn small danger">
-                حذف
-            </a>
+            </div>
 
         </div>
 
+        {% endfor %}
+
     </div>
-
-{% endfor %}
-
-</div>
-<!-- 🌟🌟🌟 پایان نسخه جدید 🌟🌟🌟 -->
-
-
-
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/forms_list.js') }}"></script>
 {% endblock %}

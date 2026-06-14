@@ -55,33 +55,24 @@
     <h3 style="color: white; margin: 40px 0 20px;">📄 صفحات طراحی شده</h3>
 
     <div class="forms-container" id="pagesContainer">
-
         {% for page in pages %}
-
         <div class="builder-card" id="page-{{ page.id }}">
-
             <div class="builder-card-header" style="display:flex; align-items:center; justify-content:space-between;">
-
                 <div style="display:flex; align-items:center; gap:12px;">
-
                     <div class="drag-handle">☰</div>
-
                     <div>
                         <h4 class="page-title-text"
                             data-page-id="{{ page.id }}"
                             style="color:white; margin:0; cursor:pointer;">
                             {{ page.title }}
                         </h4>
-
                         <small style="color: rgba(255,255,255,0.4);">
                             ID: #{{ page.id }}
                         </small>
                     </div>
-
                 </div>
 
                 <div class="form-actions">
-
                     <button class="glass-btn duplicate-page"
                         data-page-id="{{ page.id }}">
                         📄 کپی
@@ -101,17 +92,11 @@
                             🔒 غیرقابل تغییر
                         </span>
                     {% endif %}
-
                 </div>
-
             </div>
-
         </div>
-
         {% endfor %}
-
     </div>
-
 </div>
 
 <div id="historyModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); z-index:2000; align-items:center; justify-content:center;">
@@ -124,13 +109,15 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+
 <script>
-    window.formId = Number("{{ form.id }}");
+    window.formId = Number({{ form.id }});
 </script>
 
-
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="{{ url_for('static', filename='js/Sortable.min1.js') }}"></script>
 <script src="{{ url_for('static', filename='js/builder.js') }}"></script>
-
 
 {% endblock %}

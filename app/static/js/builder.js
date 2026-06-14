@@ -1,3 +1,7 @@
+console.log("BUILDER.JS >>> I AM NEW VERSION");
+console.log("window.formId at load:", window.formId);
+console.log("builder.js loaded");
+console.log("window.formId at load:", window.formId);
 document.addEventListener("DOMContentLoaded", () => {
 
 
@@ -385,123 +389,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 });
-
-// =============================
-// HISTORY MODAL
-// =============================
-
-// window.openHistory = function() {
-
-//     const list = document.getElementById("historyList");
-//     const modal = document.getElementById("historyModal");
-
-//     // ⛔ پاک کردن لیست قبلی و نمایش وضعیت بارگذاری
-//     list.innerHTML = "<p style='opacity:0.6; padding:10px'>در حال بارگذاری...</p>";
-
-//     // ⛔ همین‌جا مودال را باز می‌کنیم تا کاربر محتواهای قدیمی نبیند
-//     modal.style.display = "flex";
-
-//     fetch(`/admin/history/${window.formId}`)
-//     .then(res => res.json())
-//     .then(data => {
-
-//         // ⛔ پاک‌سازی ثانویه (برای اطمینان)
-//         list.innerHTML = "";
-
-//         if (data.length === 0) {
-//             list.innerHTML = "<p style='color:#ccc'>تاریخچه‌ای وجود ندارد.</p>";
-//             return;
-//         }
-
-//         data.forEach(item => {
-
-//             let icon = "📝";
-//             let badge = "";
-
-//             if (item.action === "add") {
-//                 icon = "➕";
-//                 badge = "history-add";
-//             }
-
-//             if (item.action === "delete") {
-//                 icon = "🗑";
-//                 badge = "history-delete";
-//             }
-
-//             if (item.action === "update") {
-//                 icon = "✏️";
-//                 badge = "history-update";
-//             }
-
-//             const div = document.createElement("div");
-//             div.className = "history-item";
-
-//             div.innerHTML = `
-//                 <div class="history-dot"></div>
-
-//                 <div style="color:white; font-size:14px; margin-bottom:4px;">
-//                     ${icon}
-//                     <span class="history-badge ${badge}">
-//                         ${item.action}
-//                     </span>
-//                     ${item.entity_type}
-//                 </div>
-
-//                 <div class="history-time">
-//                     ${item.created_at}
-//                 </div>
-
-//                 <div style="margin-top:8px;">
-//                     <button class="glass-btn" onclick="restoreHistory(${item.id})">
-//                         ↩ بازگردانی
-//                     </button>
-//                 </div>
-//             `;
-
-//             list.appendChild(div);
-//         });
-//     });
-// }
-
-// window.closeHistory = function() {
-//     document.getElementById("historyModal").style.display = "none";
-// }
-
-// window.restoreHistory = function(id) {
-
-//     if (!confirm("این تغییر بازگردانی شود؟")) return;
-
-//     fetch(`/admin/history/restore/${id}`, {
-//         method: "POST"
-//     })
-//     .then(res => res.json())
-//     .then(() => {
-//         alert("بازگردانی انجام شد");
-//         location.reload();
-//     });
-// }
-
-
-// window.closeHistory = function() {
-//     document.getElementById("historyModal").style.display = "none";
-// }
-
-// window.restoreHistory = function(id) {
-
-//     if (!confirm("این تغییر بازگردانی شود؟")) return;
-
-//     fetch(`/admin/history/restore/${id}`, {
-//         method: "POST"
-//     })
-//     .then(res => res.json())
-//     .then(() => {
-//         alert("بازگردانی انجام شد");
-//         location.reload();
-//     });
-// }
-
-
-
 
 // =============================
 // HISTORY MODAL

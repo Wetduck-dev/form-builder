@@ -1,0 +1,82 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}داشبورد مدیریت{% endblock %}
+
+{% block content %}
+
+<div class="page-header" style="margin-top: 25px;">
+    <div class="header-line"></div>
+    <div class="header-text">
+        <h1 class="page-title"> داشبورد مدیریتی</h1>
+        <p class="page-subtitle">خلاصه‌ای از وضعیت فرم‌ها و آمار کلی سامانه</p>
+    </div>
+</div>
+
+<!-- Cards Row -->
+<div class="quick-stats" style="margin-top: 25px;">
+    <div class="stat-card">
+        <div class="stat-value" id="dash-total-forms">{{ stats.total_forms }}</div>
+        <div class="stat-label">کل فرم‌ها</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-value" id="dash-active-forms">{{ stats.active_forms }}</div>
+        <div class="stat-label">فرم‌های فعال</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-value" id="dash-finalized-forms">{{ stats.finalized_forms }}</div>
+        <div class="stat-label">فرم‌های نهایی شده</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-value" id="dash-draft-forms">{{ stats.draft_forms }}</div>
+        <div class="stat-label">پیش‌نویس‌ها</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-value" id="dash-total-votes">{{ stats.total_votes }}</div>
+        <div class="stat-label">کل رأی‌ها</div>
+    </div>
+</div>
+
+<div class="page-header" style="margin-top: 50px;">
+    <div class="header-line"></div>
+    <div class="header-text">
+        <h2 class="page-title"> نتایج فرم‌ها</h2>
+        <p class="page-subtitle">برای مشاهده نتایج هر فرم روی کارت آن کلیک کنید</p>
+    </div>
+</div>
+
+<div class="form-list-grid">
+    {% for form in forms %}
+    <a href="{{ url_for('admin.results', form_id=form.id) }}" class="form-card">
+        <h3 class="form-title">{{ form.title }}</h3>
+        <p class="form-date">تاریخ ایجاد: {{ form.created_at.strftime('%Y-%m-%d') }}</p>
+
+        <div class="form-status">
+
+            {% if form.is_finalized %}
+            <span class="glass-btn success neon status">نهایی شده</span>
+            {% else %}
+            <span class="glass-btn warning neon status">پیش‌نویس</span>
+            {% endif %}
+
+            {% if form.is_active %}
+            <span class="glass-btn success neon status">فعال</span>
+            {% else %}
+            <span class="glass-btn danger neon status">غیرفعال</span>
+            {% endif %}
+
+            <span class="glass-btn neon see-results-btn">مشاهده نتایج</span>
+
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

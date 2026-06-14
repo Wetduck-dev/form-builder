@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>{% block title %}سامانه{% endblock %}</title>
+    <title>{% block title %}سامانه{% endblock %}</title>
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
 </head>
 
 <body>
@@ -18,30 +19,75 @@
     </div> -->
 
 
-{% if hide_navbar is not defined or hide_navbar == False %}
-<nav class="navbar">
-    <div class="nav-title">سامانه فرم‌ساز</div>
+    {% if hide_navbar is not defined or hide_navbar == False %}
+    <nav class="navbar">
+        <div class="nav-title">سامانه فرم‌ساز</div>
 
-    <div class="nav-links">
-        {% if current_user.is_authenticated %}
-            <a href="{{ url_for('admin.forms_list') }}">داشبورد</a>
+        <div class="nav-links">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('admin.forms_list') }}">مدیریت فرم‌ها</a>
             <a href="{{ url_for('admin.create_form') }}">ساخت فرم</a>
+            <a href="{{ url_for('admin.dashboard') }}">داشبورد</a>
             <a href="{{ url_for('auth.logout') }}">خروج</a>
-        {% endif %}
+            {% endif %}
+        </div>
+    </nav>
+
+    {% endif %}
+
+    {% block flash %}
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const messages = {{ messages | tojson
+        }};
+        messages.forEach(([category, msg]) => {
+            createToast(msg, category);
+        });
+                });
+    </script>
+    {% endif %}
+    {% endwith %}
+    {% endblock %}
+
+
+
+    <div class="page-container">
+        {% block content %}{% endblock %}
     </div>
-</nav>
 
-{% endif %}
-{% block flash %}{% endblock %}
+    <!-- Toast Script (added exactly here) -->
+    <script>
+        function createToast(message, type = "info") {
+            const container = document.getElementById("toast-container");
 
+            const toast = document.createElement("div");
+            toast.className = "glass-toast " + type;
 
+            toast.innerHTML = `
+            <div class="toast-msg">${message}</div>
+            <div class="toast-bar"></div>
+        `;
 
+            container.appendChild(toast);
 
+            setTimeout(() => {
+                toast.classList.add("show");
+            }, 10);
 
-<div class="page-container">
-    {% block content %}{% endblock %}
-</div>
+            setTimeout(() => {
+                toast.classList.remove("show");
+                setTimeout(() => toast.remove(), 400);
+            }, 4500);
+        }
+    </script>
 
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
 </body>
+
 </html>

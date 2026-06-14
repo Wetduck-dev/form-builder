@@ -30,6 +30,21 @@
             <label>متن سوال</label>
         </div>
 
+        <!-- انتخاب نوع سؤال -->
+        <div class="field-group">
+            <select name="type" required>
+                <option value="text">متنی</option>
+                <option value="textarea">چند خطی</option>
+                <option value="number">عددی</option>
+                <option value="date">تاریخ</option>
+                <option value="select">تک انتخابی</option>
+                <option value="multi-select">چند انتخابی</option>
+                <option value="image">آپلود تصویر</option>
+                <option value="file">آپلود فایل</option>
+            </select>
+            <label>نوع سوال</label>
+        </div>
+
         <div class="field-group">
             <input type="number" name="min_select" placeholder=" " value="1" min="1">
             <label>حداقل انتخاب</label>
@@ -39,18 +54,13 @@
             <input type="number" name="max_select" placeholder=" " value="1" min="1">
             <label>حداکثر انتخاب</label>
         </div>
+
         <button class="glass-btn" style="
-        
-        background:#6366f1;
-
-        box-shadow: 0 0 15px rgba(99, 102, 241, 0.7);
-        
-    ">
-        ثبت سوال
-    </button>
-
-
-        
+            background:#6366f1;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.7);
+        ">
+            ثبت سوال
+        </button>
     </form>
 </div>
 
@@ -81,37 +91,84 @@
 
         </div>
 
-        <!-- Add Option -->
-        <form method="POST" action="{{ url_for('admin.add_option', question_id=q.id) }}" style="margin-top:20px;">
+        <!-- 🔥 فقط این بخش اصلاح شد -->
+        <div class="field-group">
+            <select name="type" required>
+                <option value="text"        {{ 'selected' if q.type == 'text' else '' }}>متنی</option>
+                <option value="textarea"    {{ 'selected' if q.type == 'textarea' else '' }}>چند خطی</option>
+                <option value="number"      {{ 'selected' if q.type == 'number' else '' }}>عددی</option>
+                <option value="date"        {{ 'selected' if q.type == 'date' else '' }}>تاریخ</option>
+                <option value="select"      {{ 'selected' if q.type == 'select' else '' }}>تک انتخابی</option>
+                <option value="multi-select" {{ 'selected' if q.type == 'multi-select' else '' }}>چند انتخابی</option>
+                <option value="image"       {{ 'selected' if q.type == 'image' else '' }}>آپلود تصویر</option>
+                <option value="file"        {{ 'selected' if q.type == 'file' else '' }}>آپلود فایل</option>
+            </select>
+        </div>
+        <!-- 🔥 پایان اصلاح -->
 
-            <div class="field-group">
-                <input type="text" name="text" placeholder=" " required>
-                <label>متن گزینه</label>
+        <!-- 🔥🔥🔥 PREVIEW جدید برای image / file -->
+        {% if q.type == "image" %}
+            <div style="
+                margin-top:15px;
+                padding:15px;
+                border:1px dashed rgba(255,255,255,.25);
+                border-radius:8px;
+                text-align:center;
+                color:#93c5fd;
+            ">
+                🖼️ <strong>فیلد آپلود تصویر</strong><br>
+                <small>کاربر در فرم نهایی امکان انتخاب تصویر خواهد داشت</small>
             </div>
 
-            <button class="glass-btn" style="background:#6366f1;">➕ افزودن گزینه</button>
-        </form>
+        {% elif q.type == "file" %}
+            <div style="
+                margin-top:15px;
+                padding:15px;
+                border:1px dashed rgba(255,255,255,.25);
+                border-radius:8px;
+                text-align:center;
+                color:#fde68a;
+            ">
+                📎 <strong>فیلد آپلود فایل</strong><br>
+                <small>کاربر می‌تواند فایل مورد نظر را آپلود کند</small>
+            </div>
+        {% endif %}
+        <!-- 🔥🔥🔥 پایان PREVIEW -->
 
-        <!-- Options List -->
-        <table class="table-modern" style="margin-top:15px;">
-            <thead>
-                <tr>
-                    <th>گزینه‌ها</th>
-                    <th style="width:120px;">عملیات</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for opt in q.options %}
-                <tr>
-                    <td>{{ opt.text }}</td>
-                    <td>
-                        <button class="glass-btn danger delete-option" data-id="{{ opt.id }}">حذف</button>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+        {% if q.type in ["select", "multi-select"] %}
+            <!-- Add Option -->
+            <form method="POST"
+                  action="{{ url_for('admin.add_option', question_id=q.id) }}"
+                  style="margin-top:20px;">
 
+                <div class="field-group">
+                    <input type="text" name="text" placeholder=" " required>
+                    <label>متن گزینه</label>
+                </div>
+
+                <button class="glass-btn" style="background:#6366f1;">➕ افزودن گزینه</button>
+            </form>
+
+            <!-- Options List -->
+            <table class="table-modern" style="margin-top:15px;">
+                <thead>
+                    <tr>
+                        <th>گزینه‌ها</th>
+                        <th style="width:120px;">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for opt in q.options %}
+                    <tr>
+                        <td>{{ opt.text }}</td>
+                        <td>
+                            <button class="glass-btn danger delete-option" data-id="{{ opt.id }}">حذف</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
     </div>
     {% endfor %}
 </div>
@@ -120,7 +177,7 @@
     window.formId = Number("{{ form.id }}");
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="{{ url_for('static', filename='js/Sortable.min1.js') }}"></script>
 <script src="{{ url_for('static', filename='js/builder_page.js') }}"></script>
 
 {% endblock %}

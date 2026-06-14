@@ -1,4 +1,4 @@
-from flask import Blueprint ,render_template ,request ,redirect ,url_for ,session
+from flask import Blueprint ,render_template ,request ,redirect ,url_for ,session ,jsonify ,current_app
 from app.models.voter import Voter
 from app.models.form import Form
 from app.models.otp import OTP
@@ -7,6 +7,8 @@ from app.extensions import db
 from app.models.option import Option
 from app.models.vote import Vote
 import random
+import os
+import uuid
 
 
 vote_bp = Blueprint("vote", __name__)
@@ -78,15 +80,22 @@ def verify_otp(token, nid):
 
         if not otp:
             return "OTP پیدا نشد"
-
-        # مقایسه به صورت string
+        
         if entered_code != str(otp.code):
-            return "کد OTP اشتباه است"
+            return render_template("vote/message.html", message="کد OTP اشتباه است")
+        
 
         if not otp.is_valid():
-            return "کد OTP منقضی شده"
-        
+            return render_template("vote/message.html", message="کد OTP منقضی شده")
+
+        # ✅ اگر قبلاً رأی داده
+        if voter.has_voted:
+            return redirect(url_for("vote.vote_result", token=token, voter_id=voter.id))
+
+        # ✅ اگر هنوز رأی نداده
         return redirect(url_for("vote.cast_vote", token=token, voter_id=voter.id, page_num=1))
+
+
 
         
 
@@ -145,15 +154,65 @@ def verify_otp(token, nid):
 #     # GET → نمایش فرم رأی‌گیری
 #     return render_template("vote/cast.html", form=form, voter=voter)
 
+# @vote_bp.route("/result/<token>/<int:voter_id>")
+# def vote_result(token, voter_id):
+#     form = Form.query.filter_by(token=token).first_or_404()
+#     voter = Voter.query.get_or_404(voter_id)
+
+#     if not voter.has_voted:
+#         return redirect(url_for("vote.cast_vote", token=token, voter_id=voter.id, page_num=1))
+
+#     return render_template("vote/result.html", form=form, voter=voter)
+
+@vote_bp.route("/result/<token>/<int:voter_id>")
+def vote_result(token, voter_id):
+    form = Form.query.filter_by(token=token).first_or_404()
+    voter = Voter.query.get_or_404(voter_id)
+
+    if not voter.has_voted:
+        return redirect(url_for("vote.cast_vote", token=token, voter_id=voter.id, page_num=1))
+
+    # گرفتن تمام رأی‌های این کاربر
+    votes = Vote.query.filter_by(
+        form_id=form.id,
+        voter_id=voter.id
+    ).all()
+
+    # گروه‌بندی بر اساس question
+    result_data = {}
+
+    for vote in votes:
+        q = vote.question
+
+        if q.id not in result_data:
+            result_data[q.id] = {
+                "question_text": q.text,
+                "options": []
+            }
+
+        result_data[q.id]["options"].append(vote.option.text)
+
+    return render_template(
+        "vote/result.html",
+        form=form,
+        voter=voter,
+        result_data=result_data
+    )
 
 @vote_bp.route("/cast/<token>/<int:voter_id>/<int:page_num>", methods=["GET", "POST"])
 def cast_vote(token, voter_id, page_num):
     form = Form.query.filter_by(token=token).first_or_404()
     voter = Voter.query.get_or_404(voter_id)
 
+    # تشخیص AJAX
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
     # اگر قبلاً رأی داده
     if voter.has_voted:
-        return "قبلاً رأی داده‌اید!"
+        redirect_url = url_for("vote.vote_result", token=token, voter_id=voter.id)
+        if is_ajax:
+            return jsonify({"redirect": redirect_url})
+        return redirect(redirect_url)
 
     if not form.is_active:
         return "فرم غیرفعال است."
@@ -173,31 +232,112 @@ def cast_vote(token, voter_id, page_num):
         session["vote_data"] = {}
 
     vote_data = session["vote_data"]
+    error_message = None
 
-    # POST → ذخیره موقت پاسخ‌های این صفحه
     if request.method == "POST":
         for question in page.questions:
-            selected = request.form.getlist(f"question_{question.id}")
 
-            # محدودیت min/max
-            if not (question.min_select <= len(selected) <= question.max_select):
-                return f"تعداد انتخاب‌های سؤال «{question.text}» معتبر نیست", 400
+            key = f"question_{question.id}"
 
-            vote_data[str(question.id)] = selected
+            # -----------------------
+            # 1) file / image  (✅ فقط این بخش تغییر کرده)
+            # -----------------------
+            if question.type in ["file", "image"]:
+                uploaded_file = request.files.get(key)
 
-        session.modified = True  # ذخیره شود
+                if uploaded_file and uploaded_file.filename:
+                    ext = uploaded_file.filename.rsplit(".", 1)[-1].lower()
+                    filename = f"{uuid.uuid4().hex}.{ext}"
 
-        # اگر دکمه بعدی زده شد
-        if "next" in request.form:
-            return redirect(url_for("vote.cast_vote", token=token, voter_id=voter_id, page_num=page_num + 1))
+                    # مسیر: static/uploads/votes/<form_token>/<national_id>/
+                    upload_path = os.path.join(
+                        current_app.static_folder,
+                        "uploads",
+                        "votes",
+                        form.token,
+                        str(voter.national_id)
+                    )
+                    os.makedirs(upload_path, exist_ok=True)
 
-        # اگر دکمه قبلی زده شد
-        if "prev" in request.form:
-            return redirect(url_for("vote.cast_vote", token=token, voter_id=voter_id, page_num=page_num - 1))
+                    # ذخیره فایل روی دیسک
+                    full_path = os.path.join(upload_path, filename)
+                    uploaded_file.save(full_path)
 
-        # اگر در آخرین صفحه دکمه پایان زده شد
+                    # مسیر نسبی برای استفاده در قالب‌ها / session
+                    rel_path = f"uploads/votes/{form.token}/{voter.national_id}/{filename}"
+
+                    # ذخیره در vote_data
+                    vote_data[str(question.id)] = [f"FILE:{rel_path}"]
+                else:
+                    vote_data[str(question.id)] = []
+
+            # -----------------------
+            # 2) select / multi-select
+            # -----------------------
+            elif question.type in ["select", "multi-select"]:
+                selected = request.form.getlist(key)
+
+                if not (question.min_select <= len(selected) <= question.max_select):
+                    error_message = f"تعداد انتخاب‌های سؤال «{question.text}» معتبر نیست"
+
+                    if is_ajax:
+                        return jsonify({
+                            "error": error_message,
+                            "question_id": question.id
+                        })
+
+                    return render_template(
+                        "vote/cast_page.html",
+                        form=form,
+                        voter=voter,
+                        page=page,
+                        page_num=page_num,
+                        total_pages=total_pages,
+                        vote_data=vote_data,
+                        error_message=error_message
+                    )
+
+                vote_data[str(question.id)] = selected
+
+            # -----------------------
+            # 3) text / textarea / number / date
+            # -----------------------
+            else:
+                value = request.form.get(key, "")
+                vote_data[str(question.id)] = [value]
+
+        session.modified = True
+
+        # دکمه next
+        if "next" in request.form and page_num < total_pages:
+            redirect_url = url_for(
+                "vote.cast_vote",
+                token=token,
+                voter_id=voter_id,
+                page_num=page_num + 1
+            )
+            if is_ajax:
+                return jsonify({"redirect": redirect_url})
+            return redirect(redirect_url)
+
+        # دکمه prev
+        if "prev" in request.form and page_num > 1:
+            redirect_url = url_for(
+                "vote.cast_vote",
+                token=token,
+                voter_id=voter_id,
+                page_num=page_num - 1
+            )
+            if is_ajax:
+                return jsonify({"redirect": redirect_url})
+            return redirect(redirect_url)
+
+        # دکمه finish
         if "finish" in request.form:
-            return finalize_vote(form, voter, vote_data)
+            result = finalize_vote(form, voter, vote_data)
+            if is_ajax and hasattr(result, "location"):
+                return jsonify({"redirect": result.location})
+            return result
 
     return render_template(
         "vote/cast_page.html",
@@ -206,15 +346,20 @@ def cast_vote(token, voter_id, page_num):
         page=page,
         page_num=page_num,
         total_pages=total_pages,
-        vote_data=vote_data
+        vote_data=vote_data,
+        error_message=error_message
     )
 
 def finalize_vote(form, voter, vote_data):
-    # حذف رأی‌های قبلی (نباید باشد ولی برای اطمینان)
     Vote.query.filter_by(voter_id=voter.id, form_id=form.id).delete()
 
     for qid, option_ids in vote_data.items():
         for opt_id in option_ids:
+            # اگر فایل است، فعلا در Vote ذخیره نکن (باید مدل جداگانه داشته باشی)
+            if isinstance(opt_id, str) and opt_id.startswith("FILE:"):
+                # اینجا در آینده می‌تونی مدل FileAnswer بسازی و ذخیره‌اش کنی
+                continue
+
             v = Vote(
                 form_id=form.id,
                 voter_id=voter.id,
@@ -225,8 +370,8 @@ def finalize_vote(form, voter, vote_data):
 
     voter.has_voted = True
     db.session.commit()
-
-    # پاک کردن session  
     session.pop("vote_data", None)
 
-    return "رأی شما ثبت شد! "
+    return redirect(
+        url_for("vote.vote_result", token=form.token, voter_id=voter.id)
+    )

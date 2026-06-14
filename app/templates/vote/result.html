@@ -1,0 +1,33 @@
+{% extends "layouts/base.html" %}
+{% block title %}نتیجه رأی{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="padding:30px; max-width:800px; margin:auto;">
+
+    <h3>✅ رأی شما ثبت شده است</h3>
+
+    <p style="margin-top:10px;">
+        {{ voter.full_name }} عزیز،
+        انتخاب‌های شما به شرح زیر است:
+    </p>
+
+    <hr style="margin:20px 0;">
+
+    {% for qid, data in result_data.items() %}
+        <div style="margin-bottom:25px;">
+            <h5 style="margin-bottom:10px;">
+                🗳 {{ data.question_text }}
+            </h5>
+
+            <ul style="padding-right:20px;">
+                {% for opt in data.options %}
+                    <li style="margin-bottom:5px; color:#4CAF50;">
+                        ✅ {{ opt }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endfor %}
+
+</div>
+{% endblock %}

@@ -64,6 +64,15 @@
             color: #aaa;
             text-align: center;
         }
+
+        /* استایل کمکی برای فیلد فایل */
+        .file-input-wrapper {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px dashed #ced4da;
+            border-radius: 6px;
+            background: #fafafa;
+        }
     </style>
 </head>
 <body>
@@ -84,28 +93,69 @@
             <h3>📄 {{ page.title or "بدون عنوان" }}</h3>
 
             {% if page.questions %}
+
                 {% for q in page.questions %}
                     <div style="margin-bottom:15px;">
                         <div class="question-text">
                             {{ loop.index }}. {{ q.text }}
                         </div>
-                        <div class="info-text">
-                            حداقل انتخاب: {{ q.min_select }} / حداکثر: {{ q.max_select }}
-                        </div>
 
-                        {% for opt in q.options %}
-                            <div class="option-item">
-                                {{ opt.text }}
+                        {% if q.type == "text" %}
+                            <input type="text" name="question_{{ q.id }}" class="form-control" style="width:100%;padding:6px;margin-top:5px;" placeholder="پاسخ شما...">
+
+                        {% elif q.type == "textarea" %}
+                            <textarea name="question_{{ q.id }}" class="form-control" rows="3" style="width:100%;padding:6px;margin-top:5px;" placeholder="پاسخ خود را بنویسید..."></textarea>
+
+                        {% elif q.type == "number" %}
+                            <input type="number" name="question_{{ q.id }}" class="form-control" style="width:100%;padding:6px;margin-top:5px;">
+
+                        {% elif q.type == "date" %}
+                            <input type="date" name="question_{{ q.id }}" class="form-control" style="width:100%;padding:6px;margin-top:5px;">
+
+                        {% elif q.type == "select" %}
+                            {% if q.options %}
+                                <select name="question_{{ q.id }}" class="form-control" style="width:100%;padding:6px;margin-top:5px;">
+                                    {% for opt in q.options %}
+                                        <option value="{{ opt.id }}">{{ opt.text }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% else %}
+                                <div class="info-text">گزینه‌ای هنوز تعریف نشده</div>
+                            {% endif %}
+
+                        {% elif q.type == "multi-select" %}
+                            {% if q.options %}
+                                {% for opt in q.options %}
+                                    <div class="option-item">
+                                        <label>
+                                            <input type="checkbox" name="question_{{ q.id }}" value="{{ opt.id }}">
+                                            {{ opt.text }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="info-text">گزینه‌ای هنوز تعریف نشده</div>
+                            {% endif %}
+
+                        {# 🎯 بخش اصلاح شده برای موضوع آپلود فایل و تصویر #}
+                        {% elif q.type == "image" %}
+                            <div class="file-input-wrapper">
+                                <input type="file" name="question_{{ q.id }}" accept="image/png, image/jpeg, image/jpg, image/webp" style="width: 100%;">
+                                <div class="info-text" style="color: #6366f1; margin-top: 5px;">📸 فقط فایل تصویر (JPG, PNG, WebP)</div>
                             </div>
-                        {% endfor %}
 
-                        {% if not q.options %}
-                            <div class="info-text">هنوز گزینه‌ای برای این سؤال تعریف نشده است.</div>
+                        {% elif q.type == "file" %}
+                            <div class="file-input-wrapper">
+                                <input type="file" name="question_{{ q.id }}" style="width: 100%;">
+                                <div class="info-text" style="margin-top: 5px;">📎 انتخاب فایل (PDF, DOCX, ZIP, ...)</div>
+                            </div>
+                        {# 🎯 پایان بخش اصلاح شده #}
+
+                        {% else %}
+                            <div class="info-text">نوع سؤال ناشناخته: {{ q.type }}</div>
                         {% endif %}
                     </div>
                 {% endfor %}
-            {% else %}
-                <p class="info-text">این صفحه هنوز سؤالی ندارد.</p>
             {% endif %}
         </div>
 

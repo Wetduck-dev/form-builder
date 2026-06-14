@@ -1,144 +1,193 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Results</title>
+{% extends "layouts/base.html" %}
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+{% block title %}
+نتایج فرم
+{% endblock %}
 
-</head>
-<body class="bg-light">
+{% block content %}
 
-<div class="container mt-5">
+<div class="dashboard-header">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{{ form.title }} - Results</h2>
+    <div>
+        <h1 class="form-title">
+            نتایج فرم: {{ form.title }}
+        </h1>
 
-        <a href="{{ url_for('admin.export_full_results', form_id=form.id) }}"
-           class="btn btn-success">
-            ⬇ Download Excel
-        </a>
+        <div class="results-meta">
+            تعداد کل رأی‌ها:
+            <strong id="totalVotes">{{ total_votes }}</strong>
+        </div>
     </div>
 
-    <h5>Total Votes: <strong id="totalVotes">{{ total_votes }}</strong></h5>
-
-
-    <div class="row mt-4">
-
-        <div class="col-md-6">
-            <canvas id="barChart"></canvas>
-        </div>
-
-        <div class="col-md-6">
-            <canvas id="pieChart"></canvas>
-        </div>
-
+    <div>
+        <a href="{{ url_for('admin.export_full_results', form_id=form.id) }}" class="btn-primary">
+            دانلود اکسل
+        </a>
     </div>
 
 </div>
 
+
+<div class="results-grid">
+
+    <div class="glass-card">
+        <h3 class="card-title">نمودار رأی‌ها</h3>
+        <canvas id="barChart"></canvas>
+    </div>
+
+    <div class="glass-card">
+        <h3 class="card-title">درصد آرا</h3>
+        <canvas id="pieChart"></canvas>
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+
 <script>
+    Chart.defaults.color = "rgba(255,255,255,0.85)";
+    Chart.defaults.font.family = "Vazirmatn, sans-serif";
 
-const labels = {{ labels | tojson }};
-const votes = {{ votes | tojson }};
-const percentages = {{ percentages | tojson }};
-const formId = {{ form.id }};
 
-// ---------- BAR CHART ----------
-const barChart =new Chart(document.getElementById('barChart'), {
-    type: 'bar',
-    data: {
-        labels: labels,
-        datasets: [{
-            label: 'Votes',
-            data: votes,
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-            borderRadius: 8
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return context.raw + " votes (" +
-                               percentages[context.dataIndex] + "%)";
-                    }
-                }
-            }
+    const labels = {{ labels | tojson }};
+    const votes = {{ votes | tojson }};
+    const percentages = {{ percentages | tojson }};
+    const formId = {{ form.id }};
+
+    // ---------- BAR GRADIENT ----------
+    const barCtx = document.getElementById("barChart").getContext("2d");
+    const barGradient = barCtx.createLinearGradient(0, 0, 0, 300);
+    barGradient.addColorStop(0, "rgba(99,102,241,0.9)");
+    barGradient.addColorStop(1, "rgba(139,92,246,0.6)");
+
+    // ---------- BAR CHART ----------
+    const barChart = new Chart(barCtx, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [{
+                label: "تعداد رأی",
+                data: votes,
+                backgroundColor: barGradient,
+                borderRadius: 14,
+                hoverBackgroundColor: "#8b5cf6"
+            }]
         },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    precision: 0
+        options: {
+            responsive: true,
+            animation: {
+                duration: 1200,
+                easing: "easeOutQuart"
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "rgba(255,255,255,0.9)"
+                    }
+                },
+                tooltip: {
+                    backgroundColor: "rgba(15,23,42,0.85)",
+                    borderColor: "rgba(255,255,255,0.15)",
+                    borderWidth: 1,
+                    titleColor: "#fff",
+                    bodyColor: "#e5e7eb",
+                    padding: 14,
+                    callbacks: {
+                        label(ctx) {
+                            return `${ctx.raw} رأی (${percentages[ctx.dataIndex]}٪)`;
+                        }
+                    }
                 }
-            }
-        }
-    }
-});
-
-// ---------- PIE CHART ----------
-const pieChart = new Chart(document.getElementById('pieChart'), {
-    type: 'pie',
-    data: {
-        labels: labels,
-        datasets: [{
-            data: votes,
-            backgroundColor: [
-                '#4CAF50',
-                '#2196F3',
-                '#FFC107',
-                '#E91E63',
-                '#9C27B0',
-                '#00BCD4'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            tooltip : {
-                callbacks: {
-                    label: function(context) {
-                        return context.label + ": " +
-                               percentages[context.dataIndex] + "%";
+            },
+            scales: {
+                x: {
+                    grid: { color: "rgba(255,255,255,0.06)" },
+                    ticks: { color: "rgba(255,255,255,0.75)" }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: "rgba(255,255,255,0.08)" },
+                    ticks: {
+                        color: "rgba(255,255,255,0.75)",
+                        precision: 0
                     }
                 }
             }
         }
+    });
+
+    // ---------- PIE CHART ----------
+    const pieChart = new Chart(document.getElementById("pieChart"), {
+        type: "doughnut",
+        data: {
+            labels,
+            datasets: [{
+                data: votes,
+                borderWidth: 0,
+                hoverOffset: 12,
+                backgroundColor: [
+                    "#6366f1",
+                    "#22c55e",
+                    "#facc15",
+                    "#ec4899",
+                    "#8b5cf6",
+                    "#06b6d4"
+                ]
+            }]
+        },
+        options: {
+            cutout: "65%",
+            animation: {
+                animateRotate: true,
+                duration: 1400
+            },
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        color: "rgba(255,255,255,0.85)",
+                        padding: 18
+                    }
+                },
+                tooltip: {
+                    backgroundColor: "rgba(15,23,42,0.85)",
+                    borderColor: "rgba(255,255,255,0.15)",
+                    borderWidth: 1,
+                    bodyColor: "#e5e7eb",
+                    padding: 14,
+                    callbacks: {
+                        label(ctx) {
+                            return `${ctx.label}: ${percentages[ctx.dataIndex]}٪`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // ---------- LIVE UPDATE ----------
+    async function fetchResults() {
+        const res = await fetch(`/admin/results_data/${formId}`);
+        const data = await res.json();
+
+        document.getElementById("totalVotes").innerText = data.total_votes;
+
+        barChart.data.labels = data.labels;
+        barChart.data.datasets[0].data = data.votes;
+
+        pieChart.data.labels = data.labels;
+        pieChart.data.datasets[0].data = data.votes;
+
+        percentages.splice(0, percentages.length, ...data.percentages);
+
+        barChart.update();
+        pieChart.update();
     }
-});
-async function fetchResults() {
 
-    const res = await fetch(`/admin/results_data/${formId}`);
-    const data = await res.json();
-    document.getElementById("totalVotes").innerText = data.total_votes;
-    
-    barChart.data.labels = data.labels;
-    barChart.data.datasets[0].data = data.votes;
-
-    pieChart.data.labels = data.labels;
-    pieChart.data.datasets[0].data = data.votes;
-
-    percentages.splice(0, percentages.length, ...data.percentages);
-
-    barChart.update();
-    pieChart.update();
-
-    document.querySelector("h5 strong").innerText = data.total_votes;
-}
-async function poll() {
-    await fetchResults();
-    setTimeout(poll, 3000);
-}
-
-poll();
-
-
-
+    setInterval(fetchResults, 3000);
 </script>
-
-</body>
-</html>
+{% endblock %}

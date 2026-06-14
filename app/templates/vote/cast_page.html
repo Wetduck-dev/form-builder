@@ -1,51 +1,253 @@
 {% extends "layouts/base.html" %}
+{% block title %}مرحله {{ page_num }}{% endblock %}
 
 {% block content %}
+<div class="vote-wrapper">
+    <div class="glass-card vote-card">
 
-<div class="glass-card" style="padding:25px;">
-
-    <h3>{{ page.title }}</h3>
-
-    <form method="POST">
-
-        {% for q in page.questions %}
-            <div class="question-block">
-                <h5>{{ q.text }}</h5>
-
-                {% set input_type = 'checkbox' if q.max_select > 1 else 'radio' %}
-
-                {% for opt in q.options %}
-                <label style="display:block; margin-bottom:5px;">
-                    <input
-                        type="{{ input_type }}"
-                        name="question_{{ q.id }}"
-                        value="{{ opt.id }}"
-                        {% if vote_data.get(q.id|string) and (opt.id|string) in vote_data[q.id|string] %}checked{% endif %}
-                    >
-                    {{ opt.text }}
-                </label>
-                {% endfor %}
-
-            </div>
-            <hr>
-        {% endfor %}
-
-        <div style="display:flex; justify-content:space-between; margin-top:20px;">
-
-            {% if page_num > 1 %}
-            <button class="btn btn-secondary" name="prev" value="1">مرحله قبل</button>
-            {% endif %}
-
-            {% if page_num < total_pages %}
-            <button class="btn btn-primary" name="next" value="1">مرحله بعد</button>
-            {% else %}
-            <button class="btn btn-success" name="finish" value="1">پایان</button>
-            {% endif %}
-
+        <div class="vote-page-title">
+            {{ page.title }}
         </div>
 
-    </form>
+        <div class="vote-error" id="vote-error" style="display:none;"></div>
 
+        <form method="POST" id="vote-form" enctype="multipart/form-data">
+
+            <!-- {% for q in page.questions %}
+                <div class="question-block" data-question-id="{{ q.id }}">
+
+                    <div class="question-title">
+                        {{ q.text }}
+                    </div>
+
+                    {% if q.type == "image" %}
+                        <input type="file"
+                               name="question_{{ q.id }}"
+                               accept="image/*">
+
+                    {% elif q.type == "file" %}
+                        <input type="file"
+                               name="question_{{ q.id }}">
+
+                    {% elif q.type in ["select","multi-select"] %}
+
+                        {% set input_type = 'checkbox' if q.type == 'multi-select' else 'radio' %}
+
+                        {% for opt in q.options %}
+                            <label class="option-label">
+                                <input
+                                    type="{{ input_type }}"
+                                    name="question_{{ q.id }}"
+                                    value="{{ opt.id }}"
+                                    {% if vote_data.get(q.id|string) and (opt.id|string) in vote_data[q.id|string] %}
+                                        checked
+                                    {% endif %}
+                                >
+                                <span>{{ opt.text }}</span>
+                            </label>
+                        {% endfor %}
+
+                    {% endif %}
+
+                </div>
+            {% endfor %} -->
+
+
+
+            {% for q in page.questions %}
+                <div class="question-block" data-question-id="{{ q.id }}">
+
+                    <div class="question-title">
+                        {{ q.text }}
+                    </div>
+
+                    {% if q.type == "image" %}
+
+                        <input type="file"
+                            name="question_{{ q.id }}"
+                            accept="image/*">
+
+                    {% elif q.type == "file" %}
+
+                        <input type="file"
+                            name="question_{{ q.id }}">
+
+                    {% elif q.type == "text" %}
+
+                        <input type="text"
+                            name="question_{{ q.id }}"
+                            class="input-text">
+
+                    {% elif q.type == "textarea" %}
+
+                        <textarea name="question_{{ q.id }}"
+                                class="input-textarea"></textarea>
+
+                    {% elif q.type == "number" %}
+
+                        <input type="number"
+                            name="question_{{ q.id }}">
+
+                    {% elif q.type == "date" %}
+
+                        <input type="date"
+                            name="question_{{ q.id }}">
+
+                    {% elif q.type in ["select","multi-select"] %}
+
+                        {% set input_type = 'checkbox' if q.type == 'multi-select' else 'radio' %}
+
+                        {% for opt in q.options %}
+                            <label class="option-label">
+                                <input
+                                    type="{{ input_type }}"
+                                    name="question_{{ q.id }}"
+                                    value="{{ opt.id }}"
+                                    {% if vote_data.get(q.id|string) and (opt.id|string) in vote_data[q.id|string] %}
+                                        checked
+                                    {% endif %}
+                                >
+                                <span>{{ opt.text }}</span>
+                            </label>
+                        {% endfor %}
+
+                    {% endif %}
+
+                </div>
+            {% endfor %}
+
+
+            <div class="flex-between" style="margin-top:20px;">
+
+                {% if page_num > 1 %}
+                    <button type="submit"
+                            class="btn btn-secondary"
+                            name="prev"
+                            value="1">
+                        مرحله قبل
+                    </button>
+                {% endif %}
+
+                {% if page_num < total_pages %}
+                    <button type="submit"
+                            class="btn btn-primary"
+                            name="next"
+                            value="1">
+                        مرحله بعد
+                    </button>
+                {% else %}
+                    <button type="submit"
+                            class="btn btn-success"
+                            name="finish"
+                            value="1">
+                        پایان
+                    </button>
+                {% endif %}
+
+            </div>
+
+        </form>
+
+    </div>
 </div>
 
+<style>
+.question-block.error{
+border:2px solid #ff4d4f;
+padding:12px;
+border-radius:8px;
+background:rgba(255,77,79,0.08);
+}
+
+.question-error-text{
+color:#ffb3b3;
+font-size:13px;
+margin-top:6px;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("vote-form");
+    const errorBox = document.getElementById("vote-error");
+
+    if (!form) return;
+
+    form.addEventListener("submit", function (e) {
+
+        e.preventDefault();
+
+        errorBox.style.display = "none";
+        errorBox.innerText = "";
+
+        const formData = new FormData(form);
+
+        const submitter = e.submitter;
+        if (submitter && submitter.name) {
+            formData.append(submitter.name, submitter.value);
+        }
+
+        fetch(form.action || window.location.href, {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            console.log("SERVER RESPONSE:", data);
+
+            // پاک کردن خطاهای قبلی
+            document.querySelectorAll(".question-block").forEach(q => {
+                q.classList.remove("error");
+                const oldError = q.querySelector(".question-error-text");
+                if (oldError) oldError.remove();
+            });
+
+            // اگر خطا وجود داشت
+            if (data.error) {
+
+                const qBlock = document.querySelector(
+                    `.question-block[data-question-id="${data.question_id}"]`
+                );
+
+                if (qBlock) {
+
+                    qBlock.classList.add("error");
+
+                    const err = document.createElement("div");
+                    err.className = "question-error-text";
+                    err.innerText = data.error;
+
+                    qBlock.appendChild(err);
+
+                    qBlock.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center"
+                    });
+                }
+
+                return;
+            }
+
+            // اگر redirect بود
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            }
+
+        })
+        .catch(error => {
+            console.error("Fetch error:", error);
+        });
+
+    });
+
+});
+</script>
 {% endblock %}
